@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Echoes </title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Michroma&family=Montserrat:wght@500;700;800;900&display=swap');
+        
+        :root {
+            --primary: #1db954;
+            --primary-glow: rgba(29, 185, 84, 0.4);
+            --bg-glass: rgba(15, 15, 20, 0.65);
+            --border-glass: rgba(255, 255, 255, 0.1);
+            --text-main: #ffffff;
+            --text-muted: #a0a5aa;
+        }
+
+        body, html {
+            margin: 0; padding: 0; font-family: 'Montserrat', sans-serif !important;
+            color: var(--text-main); min-height: 100vh; background-color: #050505;
+            display: flex; flex-direction: column;
+        }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #2a2a35; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+
+        .ambient-background {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background-image: url('/assets/background.png'); background-size: cover; 
+            background-position: center; background-attachment: fixed; z-index: -1;
+        }
+
+        .app-container {
+            max-width: 1100px; margin: 0 auto; padding: 50px 20px;
+            display: flex; flex-direction: column; align-items: center;
+            flex: 1; width: 100%; box-sizing: border-box;
+        }
+
+        .header { text-align: center; margin-bottom: 40px; animation: slideInDown 0.8s ease-out forwards; }
+        .header h1 { font-family: 'Michroma', sans-serif !important; font-size: 4rem; margin: 0; letter-spacing: 6px; text-shadow: 0 0 40px rgba(29, 185, 84, 0.3); color: white; }
+        .header h1 span { color: var(--primary); }
+        .header p { color: var(--text-muted); font-size: 1.1rem; letter-spacing: 3px; margin-top: 10px; text-transform: uppercase; font-weight: 700; }
+
+        .nav-menu {
+            display: flex; justify-content: center; gap: 15px; background: rgba(0, 0, 0, 0.5);
+            padding: 10px; border-radius: 20px; border: 1px solid var(--border-glass);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            margin-bottom: 50px; animation: fadeIn 1s ease-out forwards; flex-wrap: wrap;
+        }
+
+        .nav-btn {
+            background: transparent; color: var(--text-muted); border: none; padding: 15px 30px; 
+            font-size: 1.1rem; font-family: 'Montserrat', sans-serif; font-weight: 800;
+            border-radius: 12px; cursor: pointer; transition: all 0.3s ease; letter-spacing: 1px; text-transform: uppercase;
+        }
+        .nav-btn:hover { background: rgba(255,255,255,0.05); color: white; }
+        .nav-btn.active { background: var(--primary); color: #000; box-shadow: 0 0 20px var(--primary-glow); }
+
+        .main-canvas {
+            width: 100%; background: var(--bg-glass); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
+            border: 1px solid var(--border-glass); border-radius: 24px; padding: 50px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5); box-sizing: border-box;
+        }
+
+        .view-section { display: none; animation: slideInUp 0.4s ease-out; }
+        .view-section.active { display: block; }
+
+        @keyframes slideInDown { from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .page-title { font-size: 2.5rem; font-weight: 900; margin: 0 0 10px 0; color: white; text-transform: uppercase; letter-spacing: 1px;}
+        .page-subtitle { font-size: 1.1rem; color: var(--text-muted); font-weight: 600; margin-bottom: 40px; }
+
+        /* --- UI COMPONENTS --- */
+        .search-bar {
+            width: 100%; box-sizing: border-box; padding: 25px 30px; font-size: 1.5rem; font-weight: 700; font-family: 'Montserrat', sans-serif;
+            background: rgba(0,0,0,0.6); border: 1px solid var(--border-glass); border-radius: 16px; color: #ffffff; transition: all 0.3s ease;
+        }
+        .search-bar:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 30px rgba(29, 185, 84, 0.2); }
+
+        .results-container { display: flex; flex-direction: column; gap: 12px; margin-top: 30px;}
+
+        .list-row {
+            display: flex; justify-content: space-between; align-items: center; padding: 20px 30px; background: rgba(0,0,0,0.4); 
+            border-left: 4px solid transparent; border-radius: 14px; transition: all 0.2s ease; border: 1px solid rgba(255,255,255,0.05);
+            position: relative; overflow: hidden;
+        }
+        .list-row:hover { border-left-color: var(--primary); background: rgba(30, 30, 40, 0.8); transform: scale(1.01); }
+        .list-row::before { content: ''; position: absolute; top: 0; left: 0; bottom: 0; width: var(--match-width, 0%); background: linear-gradient(90deg, rgba(29, 185, 84, 0.1), transparent); z-index: 0; pointer-events: none; }
+
+        .track-info { z-index: 1; display: flex; align-items: center; gap: 20px; }
+        .track-details { display: flex; flex-direction: column; gap: 6px; }
+        .track-name { font-size: 1.3rem; font-weight: 800; color: #ffffff; }
+        .track-artist { font-size: 1rem; font-weight: 600; color: var(--text-muted); }
+        
+        .row-actions { z-index: 1; display: flex; align-items: center; gap: 15px; }
+        .match-badge { background: rgba(0, 0, 0, 0.6); color: var(--primary); padding: 10px 16px; border-radius: 8px; font-weight: 800; font-size: 1rem; border: 1px solid rgba(29, 185, 84, 0.3); }
+
+        /* Sliders */
+        .sliders-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 40px; }
+        .slider-group label { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 0.95rem; color: #a0a5aa; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; }
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; margin: 10px 0; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 8px; background: #22222a; border-radius: 4px; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 24px; width: 24px; border-radius: 50%; background: var(--primary); margin-top: -8px; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 0 10px rgba(0,0,0,0.8); }
+        input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); background: #2ecc71; }
+        
+        .btn-generate { 
+            width: 100%; padding: 22px; background: var(--primary); color: #000; border: none; border-radius: 16px; font-size: 1.3rem; 
+            font-family: 'Montserrat', sans-serif; font-weight: 900; cursor: pointer; transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 3px; 
+            margin-top: 40px; box-shadow: 0 10px 20px rgba(29, 185, 84, 0.2);
+        }
+        .btn-generate:hover { transform: translateY(-3px); box-shadow: 0 15px 30px rgba(29, 185, 84, 0.4); }
+
+        .playlist-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; }
+        .playlist-card { background: rgba(0,0,0,0.5); border: 1px solid var(--border-glass); border-radius: 20px; padding: 35px 25px; cursor: pointer; transition: 0.3s; text-align: center; }
+        .playlist-card:hover { border-color: var(--primary); transform: translateY(-10px); box-shadow: 0 20px 40px rgba(0,0,0,0.6); background: rgba(20,20,25,0.8);}
+        .playlist-card h3 { font-size: 1.6rem; font-weight: 900; margin: 0 0 15px 0; color: white;}
+        .playlist-card p { color: var(--text-muted); font-size: 1rem; font-weight: 600; margin: 0; line-height: 1.5;}
+        .card-icon { font-size: 3rem; margin-bottom: 20px; }
+
+        .card-wizard { border-color: var(--primary); background: rgba(29, 185, 84, 0.05); }
+        .card-wizard:hover { background: rgba(29, 185, 84, 0.15); box-shadow: 0 0 40px rgba(29, 185, 84, 0.2); }
+
+        /* --- VIBE WIZARD MODAL --- */
+        .wizard-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(5, 5, 5, 0.9); backdrop-filter: blur(10px);
+            border-radius: 24px; z-index: 100; display: none; flex-direction: column;
+            align-items: center; justify-content: center; padding: 40px; box-sizing: border-box;
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        .wizard-content { max-width: 600px; width: 100%; text-align: center; }
+        .wizard-step { display: none; animation: slideInUp 0.3s ease-out; }
+        .wizard-step.active { display: block; }
+        
+        .wizard-q { font-size: 2rem; font-weight: 900; margin-bottom: 40px; color: white; }
+        .wizard-options { display: flex; flex-direction: column; gap: 15px; }
+        
+        .wizard-btn {
+            background: rgba(255,255,255,0.05); border: 1px solid var(--border-glass);
+            padding: 20px; border-radius: 16px; color: white; font-size: 1.2rem; font-weight: 700;
+            font-family: 'Montserrat', sans-serif; cursor: pointer; transition: 0.2s;
+        }
+        .wizard-btn:hover { background: rgba(29, 185, 84, 0.2); border-color: var(--primary); transform: scale(1.02); }
+
+        .wizard-close {
+            position: absolute; top: 30px; right: 30px; background: transparent; border: none;
+            color: white; font-size: 2rem; cursor: pointer; opacity: 0.5; transition: 0.2s;
+        }
+        .wizard-close:hover { opacity: 1; color: var(--primary); }
+
+        /* --- FOOTER QUOTE --- */
+        .music-quote {
+            margin-top: 60px;
+            margin-bottom: 30px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            font-style: italic;
+            opacity: 0.6;
+            line-height: 1.6;
+            animation: fadeIn 2s ease-in forwards;
+            max-width: 600px;
+        }
+        
+        .music-quote span {
+            display: block;
+            margin-top: 10px;
+            font-size: 0.8rem;
+            font-style: normal;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--primary);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="ambient-background"></div>
+
+    <div class="app-container">
+        <header class="header">
+            <h1>ECHOES<span></span></h1>
+            <p>Music Recommendation Engine</p>
+        </header>
+
+        <nav class="nav-menu">
+            <button class="nav-btn active" onclick="switchView('view-search', this)">Search Engine</button>
+            <button class="nav-btn" onclick="switchView('view-studio', this)">The Studio</button>
+            <button class="nav-btn" onclick="switchView('view-presets', this)">Engine Playlists</button>
+        </nav>
+
+        <main class="main-canvas">
+
+            <section id="view-search" class="view-section active">
+                <h2 class="page-title">Sonic Search</h2>
+                <p class="page-subtitle">Extract the topological vibe of any track.</p>
+                <input type="text" class="search-bar" id="searchInput" placeholder="Type a track name and press Enter..." onkeypress="handleSpotifySearch(event)">
+                <div id="search-status" class="status-text" style="margin-top: 20px; color: var(--primary); font-weight: 800; font-size: 1.2rem; display:none;">Searching Data Core...</div>
+                <div id="search-results" class="results-container"></div>
+            </section>
+
+            <section id="view-studio" class="view-section">
+                <h2 class="page-title">The Studio</h2>
+                <p class="page-subtitle">Manually command the AI recommendation architecture.</p>
+                <div class="sliders-grid">
+                    <div class="slider-group"><label><span>Danceability</span> <span id="val-dance">0.50</span></label><input type="range" id="dance" min="0" max="1" step="0.01" value="0.5" oninput="updateVal('val-dance', this.value)"></div>
+                    <div class="slider-group"><label><span>Energy</span> <span id="val-energy">0.70</span></label><input type="range" id="energy" min="0" max="1" step="0.01" value="0.7" oninput="updateVal('val-energy', this.value)"></div>
+                    <div class="slider-group"><label><span>Tempo (BPM)</span> <span id="val-tempo">120</span></label><input type="range" id="tempo" min="60" max="200" step="1" value="120" oninput="updateVal('val-tempo', this.value)"></div>
+                    <div class="slider-group"><label><span>Acousticness</span> <span id="val-acoustic">0.20</span></label><input type="range" id="acoustic" min="0" max="1" step="0.01" value="0.2" oninput="updateVal('val-acoustic', this.value)"></div>
+                    <div class="slider-group"><label><span>Valence (Mood)</span> <span id="val-valence">0.50</span></label><input type="range" id="valence" min="0" max="1" step="0.01" value="0.5" oninput="updateVal('val-valence', this.value)"></div>
+                </div>
+                <button class="btn-generate" onclick="generateFromSliders()">Synthesize Audio Vibe</button>
+                <div id="studio-status" class="status-text" style="margin-top: 20px; color: var(--primary); font-weight: 800; font-size: 1.2rem; display:none;">Generating Audio Topology...</div>
+                <div id="studio-results" class="results-container"></div>
+            </section>
+
+            <section id="view-presets" class="view-section">
+                <h2 class="page-title">Engine Playlists</h2>
+                <p class="page-subtitle">Algorithmic collections curated by Echoes AI.</p>
+                
+                <div class="playlist-grid">
+                    <div class="playlist-card card-wizard" onclick="openWizard()">
+                        <div class="card-icon">✨</div>
+                        <h3 style="color:var(--primary);">AI Custom Playlist</h3>
+                        <p>Answer 3 quick questions and let the engine craft your vibe.</p>
+                    </div>
+
+                    <div class="playlist-card" onclick="triggerPreset(0.8, 0.9, 128, 0.05, 0.7, 'Cyber Energy')">
+                        <div class="card-icon">⚡</div><h3>Cyber Energy</h3><p>Maximum BPM, heavy electronic energy.</p>
+                    </div>
+                    <div class="playlist-card" onclick="triggerPreset(0.3, 0.2, 80, 0.9, 0.2, 'Midnight Drive')">
+                        <div class="card-icon">🌙</div><h3>Midnight Drive</h3><p>Low tempo, highly acoustic, melancholic.</p>
+                    </div>
+                    <div class="playlist-card" onclick="triggerPreset(0.9, 0.6, 105, 0.2, 0.8, 'Groove Architecture')">
+                        <div class="card-icon">🔥</div><h3>Groove Arch</h3><p>Optimized for danceability and bounce.</p>
+                    </div>
+                </div>
+
+                <div id="preset-status" class="status-text" style="margin-top: 40px; color: var(--primary); font-weight: 800; font-size: 1.2rem; display:none;">Loading Algorithm...</div>
+                <div id="preset-results" class="results-container"></div>
+
+                <div id="vibe-wizard" class="wizard-overlay">
+                    <button class="wizard-close" onclick="closeWizard()">×</button>
+                    
+                    <div class="wizard-content">
+                        <div id="wiz-step-1" class="wizard-step active">
+                            <div class="wizard-q">What's the energy level?</div>
+                            <div class="wizard-options">
+                                <button class="wizard-btn" onclick="wizAnswer(1, 'chill')">Chill & Relaxed</button>
+                                <button class="wizard-btn" onclick="wizAnswer(1, 'balanced')">Balanced / Mid-tempo</button>
+                                <button class="wizard-btn" onclick="wizAnswer(1, 'hype')">High Energy & Hype</button>
+                            </div>
+                        </div>
+
+                        <div id="wiz-step-2" class="wizard-step">
+                            <div class="wizard-q">What's the core sound?</div>
+                            <div class="wizard-options">
+                                <button class="wizard-btn" onclick="wizAnswer(2, 'acoustic')">Raw, Acoustic, Instruments</button>
+                                <button class="wizard-btn" onclick="wizAnswer(2, 'electronic')">Digital, Synths, Electronic</button>
+                                <button class="wizard-btn" onclick="wizAnswer(2, 'mixed')">A mix of both</button>
+                            </div>
+                        </div>
+
+                        <div id="wiz-step-3" class="wizard-step">
+                            <div class="wizard-q">What's the mood?</div>
+                            <div class="wizard-options">
+                                <button class="wizard-btn" onclick="wizAnswer(3, 'happy')">Bright & Uplifting</button>
+                                <button class="wizard-btn" onclick="wizAnswer(3, 'dark')">Dark & Moody</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+        
+        <footer class="music-quote">
+            "Music is the pleasure the human mind experiences from counting without being aware that it is counting."
+            <span>— Gottfried Wilhelm Leibniz</span>
+        </footer>
+        
+    </div>
+
+    <script>
+        // --- NAVIGATION ROUTING ---
+        function switchView(viewId, btnElement) {
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            btnElement.classList.add('active');
+            
+            document.querySelectorAll('.view-section').forEach(sec => sec.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+        }
+
+        // --- UTILS ---
+        function updateVal(id, val) { document.getElementById(id).innerText = val; }
+        
+        function parseTrackData(rawName) {
+            let title = rawName.replace(" (Mocked Data)", "").trim();
+            let artist = "Unknown Artist";
+            if (title.includes(" by ")) { const parts = title.split(" by "); title = parts[0]; artist = parts.slice(1).join(" by "); } 
+            else if (title.includes(" - ")) { const parts = title.split(" - "); title = parts[0]; artist = parts[1]; }
+            return { title, artist };
+        }
+
+        // --- GLOBAL ROW RENDERER ---
+        function appendTrackRow(containerId, track, isSource, index) {
+            const container = document.getElementById(containerId);
+            const row = document.createElement('div');
+            row.className = 'list-row';
+            
+            const { title, artist } = parseTrackData(track.track_name);
+
+            if (isSource) {
+                row.style.borderLeftColor = "#ffffff";
+                row.innerHTML = `
+                    <div class="track-info">
+                        <div class="track-details">
+                            <div style="font-size:0.8rem; color:#1db954; font-weight:900; text-transform:uppercase; letter-spacing:1px;">Target Query</div>
+                            <div class="track-name">${title}</div>
+                            <div class="track-artist">${artist}</div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                const score = track.similarity_score || 0;
+                row.style.setProperty('--match-width', `${score}%`);
+                row.innerHTML = `
+                    <div class="track-info">
+                        <div class="track-details">
+                            <div class="track-name">${title}</div>
+                            <div class="track-artist">${artist}</div>
+                        </div>
+                    </div>
+                    <div class="row-actions">
+                        <div class="match-badge">${score}% Match</div>
+                    </div>
+                `;
+            }
+            container.appendChild(row);
+        }
+
+        // --- DATA FETCHING (Search & Studio) ---
+        async function handleSpotifySearch(event) {
+            if (event.key !== "Enter") return;
+            const query = document.getElementById('searchInput').value;
+            if (query.length < 2) return;
+
+            document.getElementById('search-results').innerHTML = '';
+            document.getElementById('search-status').style.display = 'block';
+            document.getElementById('searchInput').disabled = true;
+
+            try {
+                const response = await fetch(`http://127.0.0.1:8000/recommend/spotify/${encodeURIComponent(query)}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('search-status').style.display = 'none';
+                    appendTrackRow('search-results', data.searched_track, true, 0);
+
+                    if(data.similar_tracks) {
+                        const seenNames = new Set();
+                        let displayIndex = 1;
+                        data.similar_tracks.forEach((track) => {
+                            const { title } = parseTrackData(track.track_name);
+                            if (!seenNames.has(title)) {
+                                seenNames.add(title);
+                                appendTrackRow('search-results', track, false, displayIndex);
+                                displayIndex++;
+                            }
+                        });
+                    }
+                }
+            } catch (error) { document.getElementById('search-status').innerText = "System Error: Backend offline."; } 
+            finally { document.getElementById('searchInput').disabled = false; document.getElementById('searchInput').focus(); }
+        }
+
+        async function generateFromSliders() {
+            document.getElementById('studio-results').innerHTML = '';
+            document.getElementById('studio-status').style.display = 'block';
+            const payload = {
+                danceability: parseFloat(document.getElementById('dance').value), energy: parseFloat(document.getElementById('energy').value), key: 1, loudness: -5.0, mode: 1, speechiness: 0.05, instrumentalness: 0.0, liveness: 0.1, acousticness: parseFloat(document.getElementById('acoustic').value), valence: parseFloat(document.getElementById('valence').value), tempo: parseFloat(document.getElementById('tempo').value)
+            };
+            fetchContentApi(payload, 'studio-results', 'studio-status');
+        }
+
+        // --- VIBE WIZARD STATE MANAGEMENT ---
+        let wizState = { energy: 0.5, dance: 0.5, acoustic: 0.2, valence: 0.5, tempo: 120 };
+
+        function openWizard() {
+            document.getElementById('vibe-wizard').style.display = 'flex';
+            showWizStep(1);
+        }
+
+        function closeWizard() {
+            document.getElementById('vibe-wizard').style.display = 'none';
+        }
+
+        function showWizStep(stepNum) {
+            document.querySelectorAll('.wizard-step').forEach(el => el.classList.remove('active'));
+            document.getElementById('wiz-step-' + stepNum).classList.add('active');
+        }
+
+        function wizAnswer(step, choice) {
+            if(step === 1) {
+                if(choice === 'chill') { wizState.energy = 0.3; wizState.dance = 0.4; wizState.tempo = 80; }
+                if(choice === 'balanced') { wizState.energy = 0.6; wizState.dance = 0.6; wizState.tempo = 110; }
+                if(choice === 'hype') { wizState.energy = 0.9; wizState.dance = 0.8; wizState.tempo = 135; }
+                showWizStep(2);
+            }
+            else if (step === 2) {
+                if(choice === 'acoustic') { wizState.acoustic = 0.8; }
+                if(choice === 'electronic') { wizState.acoustic = 0.05; }
+                if(choice === 'mixed') { wizState.acoustic = 0.4; }
+                showWizStep(3);
+            }
+            else if (step === 3) {
+                if(choice === 'happy') { wizState.valence = 0.85; }
+                if(choice === 'dark') { wizState.valence = 0.2; }
+                
+                closeWizard();
+                triggerPreset(wizState.dance, wizState.energy, wizState.tempo, wizState.acoustic, wizState.valence, "Custom AI Creation");
+            }
+        }
+
+        function triggerPreset(dance, energy, tempo, acoustic, valence, name) {
+            document.getElementById('preset-results').innerHTML = '';
+            const status = document.getElementById('preset-status');
+            status.innerText = `Compiling Algorithm: ${name}...`;
+            status.style.display = 'block';
+            const payload = { danceability: dance, energy: energy, key: 1, loudness: -5.0, mode: 1, speechiness: 0.05, instrumentalness: 0.0, liveness: 0.1, acousticness: acoustic, valence: valence, tempo: tempo };
+            fetchContentApi(payload, 'preset-results', 'preset-status');
+        }
+
+        async function fetchContentApi(payload, containerId, statusId) {
+            try {
+                const response = await fetch('http://127.0.0.1:8000/recommend/content', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (response.ok) {
+                    document.getElementById(statusId).style.display = 'none';
+                    const data = await response.json();
+                    const seenNames = new Set();
+                    let displayIndex = 0;
+                    
+                    if(containerId === 'preset-results') {
+                        document.getElementById(containerId).innerHTML = `<div style="color:var(--text-muted); font-weight:800; text-transform:uppercase; margin-bottom:15px; letter-spacing:2px; font-size:0.9rem;">RESULTS GENERATED BY AI</div>`;
+                    }
+
+                    data.recommendations.forEach((track) => {
+                        const { title } = parseTrackData(track.track_name);
+                        if (!seenNames.has(title)) {
+                            seenNames.add(title);
+                            appendTrackRow(containerId, track, false, displayIndex);
+                            displayIndex++;
+                        }
+                    });
+                }
+            } catch (error) { document.getElementById(statusId).innerText = "System Error: Check backend."; }
+        }
+    </script>
+</body>
+</html>
