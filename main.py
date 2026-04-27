@@ -1,14 +1,13 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import RedirectResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles  # NEW: Imported StaticFiles
+from fastapi.staticfiles import StaticFiles  
 from pydantic import BaseModel
 import joblib
 from sklearn.metrics.pairwise import cosine_similarity
 import pandas as pd
 import numpy as np
 
-# --- IMPORT YOUR NEW SPOTIFY SCRIPT ---
 from spotify_client import fetch_track_data
 
 app = FastAPI(title="Echoes API - Live Spotify Engine")
@@ -17,7 +16,6 @@ app.add_middleware(
     CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"],
 )
 
-# NEW: Mount the assets folder so the browser has permission to view images inside it
 app.mount("/assets", StaticFiles(directory="assets"), name="assets")
 
 try:
@@ -40,17 +38,13 @@ class AudioFeatures(BaseModel):
     valence: float
     tempo: float
 
-# --- UI ROUTES ---
 @app.get("/")
 def serve_ui():
     return FileResponse("index.html")
 
-
-# --- FEATURE LIST FOR SCALER WARNING FIX ---
 FEATURE_NAMES = ['danceability', 'energy', 'key', 'loudness', 'mode', 'speechiness', 
                  'acousticness', 'instrumentalness', 'liveness', 'valence', 'tempo']
 
-# --- STUDIO SLIDERS ---
 @app.post("/recommend/content")
 def recommend_by_features(features: AudioFeatures, top_n: int = 4):
     input_features = np.array([[
@@ -59,7 +53,6 @@ def recommend_by_features(features: AudioFeatures, top_n: int = 4):
         features.instrumentalness, features.liveness, features.valence, features.tempo
     ]])
     
-    # Wrap in DataFrame to silence Scikit-learn warning
     input_df = pd.DataFrame(input_features, columns=FEATURE_NAMES)
     input_scaled = scaler.transform(input_df)
     
@@ -77,7 +70,6 @@ def recommend_by_features(features: AudioFeatures, top_n: int = 4):
     return {"status": "success", "recommendations": recommendations}
 
 
-# --- LIVE SPOTIFY INFERENCE ENDPOINT ---
 @app.get("/recommend/spotify/{query}")
 def recommend_from_spotify(query: str, top_n: int = 4):
     try:
@@ -96,7 +88,6 @@ def recommend_from_spotify(query: str, top_n: int = 4):
         spotify_data['liveness'], spotify_data['valence'], spotify_data['tempo']
     ]])
     
-    # Wrap in DataFrame to silence Scikit-learn warning
     input_df = pd.DataFrame(live_features, columns=FEATURE_NAMES)
     input_scaled = scaler.transform(input_df)
     
