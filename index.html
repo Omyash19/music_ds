@@ -358,7 +358,8 @@
             document.getElementById('searchInput').disabled = true;
 
             try {
-                const response = await fetch(`http://127.0.0.1:8000/recommend/spotify/${encodeURIComponent(query)}`);
+                // FIXED: Using relative path so it automatically uses the Render domain
+                const response = await fetch(`/recommend/spotify/${encodeURIComponent(query)}`);
                 const data = await response.json();
                 
                 if (response.ok) {
@@ -441,7 +442,8 @@
 
         async function fetchContentApi(payload, containerId, statusId) {
             try {
-                const response = await fetch('http://127.0.0.1:8000/recommend/content', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                // FIXED: Using relative path so it automatically uses the Render domain
+                const response = await fetch('/recommend/content', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 if (response.ok) {
                     document.getElementById(statusId).style.display = 'none';
                     const data = await response.json();
